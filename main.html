@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADORA_GERIKALAN_PORTFOLIO_V21</title>
+    <style>
+        /* --- GENEL AYARLAR --- */
+        body {
+            background-color: #000;
+            color: #0f0;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* --- CRT EFEKTLERİ --- */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0.5;
+        }
+
+        .glow { text-shadow: 0 0 3px rgba(0, 255, 0, 0.7); }
+
+        /* --- PENCERE YAPISI --- */
+        .terminal-window {
+            width: 90%;
+            max-width: 950px;
+            height: 700px;
+            border: 2px solid #0f0;
+            background-color: #000900;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 5;
+        }
+
+        .terminal-header {
+            background: #0f0;
+            color: #000;
+            padding: 5px 10px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .terminal-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            font-size: 14px;
+        }
+        
+        .terminal-body::-webkit-scrollbar { width: 8px; }
+        .terminal-body::-webkit-scrollbar-track { background: #000; }
+        .terminal-body::-webkit-scrollbar-thumb { background: #0f0; }
+
+        /* --- METİN STİLLERİ --- */
+        .output-line {
+            margin-bottom: 12px;
+            white-space: pre-wrap;
+            min-height: 20px;
+            line-height: 1.5;
+        }
+        
+        .prompt-text { color: #0f0; margin-right: 10px; }
+        .input-area { display: flex; align-items: center; margin-top: 10px; }
+        
+        input {
+            background: transparent;
+            border: none;
+            color: #0f0;
+            font-family: inherit;
+            font-size: inherit;
+            flex: 1;
+            outline: none;
+            text-shadow: 0 0 3px rgba(0, 255, 0, 0.7);
+            text-transform: uppercase;
+        }
+        
+        .error { color: #ff3333; text-shadow: 0 0 5px red; }
+        .menu-item { color: #ccffcc; }
+
+        /* --- DOSYA LİNKLERİ --- */
+        .file-link {
+            display: inline-block;
+            color: #0f0;
+            text-decoration: none;
+            border: 1px solid #0f0;
+            padding: 2px 8px;
+            margin: 5px 0;
+            transition: all 0.3s;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        
+        .file-link:hover {
+            background-color: #0f0;
+            color: #000;
+            box-shadow: 0 0 10px #0f0;
+        }
+
+        /* --- MATRIX CANVAS --- */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            display: none;
+            opacity: 0.4;
+        }
+
+        .ascii-art {
+            font-size: 8px;
+            line-height: 8px;
+            white-space: pre;
+            color: #0f0;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        @media (min-width: 600px) { .ascii-art { font-size: 12px; line-height: 12px; } }
+    </style>
+</head>
+<body>
+
+    <div class="scanlines"></div>
+    <canvas id="matrixCanvas"></canvas>
+
+    <div class="terminal-window" id="terminalWindow">
+        <div class="terminal-header">
+            <span>USER: AGGX_SEC</span>
+            <span>STATUS: ENCRYPTED</span>
+        </div>
+        <div class="terminal-body" id="terminalBody">
+            <div id="output"></div>
+            <div class="input-area" id="inputLine" style="display:none;">
+                <span class="prompt-text">adora@aggx:~$</span>
+                <input type="text" id="cmdInput" autocomplete="off">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA SECTION ---
+        const data = {
+            "1": {
+                text: "### WHOAMI ###\n\nNAME: Adora Gozde Gerikalan\nLOCATION: Massachusetts, UNITED STATES OF AMERICA\nROLE: Cyber Security Analyst & Data Strategist\nEDUCATION: Hult International Business School (Exp. 2028)\n\nSUMMARY:\nBusiness Analytics Undergraduate with a dedicated focus on Cybersecurity and Threat Intelligence. Leveraging academic training in Python, SQL, and Psychology to detect anomalies, analyze threat actor behaviors, and secure organizational workflows.\n\nHONORS:\n> 100% Scholarship Recipient\n> Hult Scholar Grant Awardee"
+            },
+            
+            "2": {
+                text: "### TECHNICAL ARSENAL ###\n\n[CYBER SECURITY]\n> Vulnerability Assessment & Risk Analysis\n> Malware Analysis (IDA Pro, Reverse Engineering)\n> Threat Intelligence & Actor Profiling\n> Network Security & PII Protection\n\n[DATA & CODING]\n> Python (Pandas, Scikit-Learn, Automation Scripts)\n> SQL (Complex Queries, Schema Design, Normalization)\n> Log Analysis & Anomaly Detection\n> Advanced Excel & Tableau"
+            },
+            
+            "3": {
+                text: "### PROFESSIONAL EXPERIENCE ###\n\n[1] CBDDO TURKISH CYBER SECURITY CLUSTER | Vulnerability Assessment Intern\n    Ankara, Turkiye | Sep 2023 - Aug 2024\n    > Conducted vulnerability and risk assessments for member organizations, supporting national cybersecurity initiatives.\n    > Assisted in creating awareness materials on digital threat trends and cyber resilience strategies.\n    > Gained exposure to sector-wide threat intelligence sharing and reporting processes.\n\n[2] TAA/TAD CONNECTUSA | Web Development Course Instructor\n    Ankara, Turkiye | Sep 2023 - Nov 2023\n    > Taught HTML, CSS, and basic cybersecurity principles to youth participants.\n    > Guided students in best practices for responsive and accessible web design.\n    > Mentored participants in implementing basic authentication and data validation.\n    > Evaluated student projects and provided personalized feedback to enhance coding skills.\n    > Facilitated collaborative team exercises to simulate real-world web development environments."
+            },
+
+            "4": {
+                text: "### CYBERSECURITY PROJECTS ###\n\n[PROJ_01] Predictive Modeling for Anomaly Detection\n> GOAL: Build a high-accuracy classification model for detecting anomalies in complex datasets.\n> TECH: Python, Logistic Regression, LASSO Regularization.\n> RESULT: Achieved 95.6% accuracy using feature selection (SelectKBest).\n\n[PROJ_02] Malware Analysis & Reverse Engineering\n> CONTEXT: Algorithm Ankara Project.\n> ACTION: Demonstrated static analysis using IDA Pro to identify malicious binaries.\n> OUTCOME: Successful decomposition of threat vectors in a simulated environment.\n",
+                files: [
+                    { name: "Predictive_Model_Security_Report.pdf", url: "dosyalar/predictive_model.pdf" },
+                    { name: "Malware_Analysis_Demo.py", url: "https://github.com/adoragozde" }
+                ]
+            },
+
+            "5": {
+                // GÜNCELLENDİ: YENİ PROJE EKLENDİ
+                text: "### BUSINESS & ANALYTICS PROJECTS ###\n\n[PROJ_01] Market Intelligence & Competitor Benchmarking\n> CONTEXT: Brandefense & Academic Research.\n> SCOPE: Conducted comparative research on industry actors and market trends.\n> TOOLS: Python for data filtering, SWOT Analysis, Benchmarking Frameworks.\n\n[PROJ_02] Organizational Workflow Diagnosis\n> CONTEXT: Managerial Psychology Focus.\n> SCOPE: Analyzing how psychological drivers affect organizational leadership and user utilization.\n> OUTCOME: Developed strategies to interpret utilization data in complex workflows.\n\n[PROJ_03] The Architect of Experience: A Systems Model of Personhood\n> CONTEXT: Behavioral Systems Analysis.\n> SCOPE: Developed a theoretical framework analyzing the 'person-environment system' and sociocultural determinants of behavior.\n> OUTCOME: Defined personhood as a relational, meaning-mediated process shaped by environmental interactions.\n",
+                files: [
+                    { name: "Market_Intelligence_Report.pdf", url: "dosyalar/market_research.pdf" },
+                    { name: "Organizational_Behavior_Case.pdf", url: "dosyalar/org_behavior.pdf" },
+                    { name: "The_Architect_of_Experience.pdf", url: "The Architect of Experience_A Systems Model of Personhood.pdf" }
+                ]
+            },
+
+            "6": {
+                text: "### LEADERSHIP & SPEAKING ###\n\n[SPEAKER] Algorithm Ankara Project\n> Topic: Malware analysis and reverse engineering using IDA.\n\n[SPEAKER] CBDDO & Aselsan Cyber Conference\n> Topic: Strengthening organizational cybersecurity & penetration testing.\n\n[SPEAKER] Connect USA Cyber Seminar\n> Topic: PII protection and digital privacy strategies."
+            },
+
+            "7": {
+                text: "### CERTIFICATIONS ###\n\nClick below to view verified credentials and certificates:\n",
+                files: [
+                    { name: "Google_Cybersecurity_Professional.pdf", url: "dosyalar/google_cyber.pdf" },
+                    { name: "IBM_Malware_Analysis_Assembly.pdf", url: "dosyalar/ibm_malware.pdf" },
+                    { name: "Stanford_Cryptography.pdf", url: "dosyalar/stanford_crypto.pdf" },
+                    { name: "DataCamp_SQL_MachineLearning.pdf", url: "dosyalar/datacamp_certs.pdf" },
+                    { name: "WEBoost_Hackathon_Certificate.jpg", url: "dosyalar/weboost_cert.jpg" }
+                ]
+            },
+
+            "8": {
+                text: "### AWARDS ###\n\n> Debate Match Finalist (Jan 2023) - Excellence in argumentation.\n> Oxford Big Read Finalist (Apr 2022)"
+            },
+
+            "9": {
+                text: "### CONTACT ###\n\nEMAIL:    adora.gozde@proton.me\nWEB:      aggx.dev\nLINKEDIN: linkedin.com/in/adoragozde"
+            },
+            
+            "help": {
+                text: "AVAILABLE COMMANDS:\n[1] WHOAMI\n[2] SKILLS\n[3] EXPERIENCE\n[4] CYBER PROJECTS (Files)\n[5] BUSINESS PROJECTS (Files)\n[6] LEADERSHIP\n[7] CERTIFICATIONS (Files)\n[8] AWARDS\n[9] CONTACT\n[matrix] Toggle Matrix Mode\n[clear] Clear Screen"
+            }
+        };
+
+        const asciiLogo = `
+     _    ____   ___  ____      _    
+    / \\  |  _ \\ / _ \\|  _ \\    / \\   
+   / _ \\ | | | | | | | |_) |  / _ \\  
+  / ___ \\| |_| | |_| |  _ <  / ___ \\ 
+ /_/   \\_\\____/ \\___/|_| \\_\\/_/   \\_\\
+        `;
+
+        // --- DEĞİŞKENLER ---
+        const outputDiv = document.getElementById('output');
+        const inputLine = document.getElementById('inputLine');
+        const cmdInput = document.getElementById('cmdInput');
+        const terminalBody = document.getElementById('terminalBody');
+        let commandHistory = [];
+        let historyIndex = -1;
+        let isTyping = false;
+
+        const delay = ms => new Promise(res => setTimeout(res, ms));
+
+        // --- BAŞLANGIÇ ---
+        window.onload = async function() {
+            try {
+                await typeWriter(asciiLogo, "ascii-art", 2);
+                await typeWriter("Initializing Secure Shell...", "highlight", 20);
+                await delay(300);
+                await typeWriter("Authenticating User: AGGX...", "highlight", 20);
+                await delay(300);
+                await typeWriter("Access Granted.", "highlight", 20);
+                await typeWriter("----------------------------------------", "", 5);
+                showMenu();
+            } catch (error) {
+                printLine("SYSTEM ERROR: " + error.message, "error");
+            }
+        };
+
+        // --- YAZI YAZMA EFEKTİ ---
+        async function typeWriter(text, className = "", speed = 5) {
+            if (isTyping && speed > 2) return;
+            isTyping = true;
+            
+            const div = document.createElement('div');
+            div.className = `output-line ${className} glow`;
+            outputDiv.appendChild(div);
+
+            if (!text) text = "";
+            const chars = text.split('');
+            for (let char of chars) {
+                div.textContent += char;
+                terminalBody.scrollTop = terminalBody.scrollHeight;
+                await delay(speed);
+            }
+            isTyping = false;
+        }
+
+        // --- DOSYA GÖSTERİMİ ---
+        function renderFiles(files) {
+            if (!files) return;
+            
+            const container = document.createElement('div');
+            container.className = "output-line";
+            
+            files.forEach(file => {
+                const link = document.createElement('a');
+                link.href = file.url || "#";
+                link.target = "_blank";
+                link.className = "file-link glow";
+                link.textContent = `[OPEN] ${file.name}`;
+                
+                const wrapper = document.createElement('div');
+                wrapper.appendChild(link);
+                container.appendChild(wrapper);
+            });
+            
+            outputDiv.appendChild(container);
+            terminalBody.scrollTop = terminalBody.scrollHeight;
+        }
+
+        // --- DÜZ YAZDIRMA ---
+        function printLine(text, className = "") {
+            const div = document.createElement('div');
+            div.className = `output-line ${className} glow`;
+            div.textContent = text;
+            outputDiv.appendChild(div);
+            terminalBody.scrollTop = terminalBody.scrollHeight;
+        }
+
+        // --- MENÜ ---
+        async function showMenu() {
+            inputLine.style.display = "none";
+            await typeWriter("Select a module (type number or 'help'):", "", 5);
+            
+            const menuItems = [
+                "[1] WHOAMI", 
+                "[2] SKILLS", 
+                "[3] EXPERIENCE", 
+                "[4] CYBER PROJECTS", 
+                "[5] BUSINESS PROJECTS", 
+                "[6] LEADERSHIP", 
+                "[7] CERTIFICATIONS",
+                "[8] AWARDS", 
+                "[9] CONTACT"
+            ];
+
+            for (let item of menuItems) {
+                await typeWriter(item, "menu-item", 2);
+            }
+            
+            inputLine.style.display = "flex";
+            cmdInput.focus();
+        }
+
+        // --- KLAVYE DİNLEYİCİSİ ---
+        document.addEventListener('click', () => cmdInput.focus());
+
+        cmdInput.addEventListener('keydown', async function(e) {
+            if (isTyping) {
+                e.preventDefault();
+                return;
+            }
+
+            if (e.key === 'Enter') {
+                const cmd = this.value.trim();
+                if(!cmd) return;
+                commandHistory.push(cmd);
+                historyIndex = commandHistory.length;
+                
+                printLine(`adora@aggx:~$ ${cmd}`, "highlight");
+                this.value = '';
+                inputLine.style.display = "none";
+                
+                await processCommand(cmd);
+                
+                inputLine.style.display = "flex";
+                cmdInput.focus();
+                terminalBody.scrollTop = terminalBody.scrollHeight;
+            }
+            else if (e.key === 'ArrowUp') {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    this.value = commandHistory[historyIndex];
+                }
+                e.preventDefault();
+            }
+            else if (e.key === 'ArrowDown') {
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    this.value = commandHistory[historyIndex];
+                } else {
+                    historyIndex = commandHistory.length;
+                    this.value = '';
+                }
+                e.preventDefault();
+            }
+        });
+
+        // --- KOMUT İŞLEME ---
+        async function processCommand(cmd) {
+            try {
+                const lowerCmd = cmd.toLowerCase();
+                const selectedData = data[lowerCmd];
+
+                if (selectedData) {
+                    const textContent = selectedData.text ? selectedData.text : selectedData;
+                    await typeWriter(textContent, "", 5);
+                    
+                    if (selectedData.files) {
+                        await delay(200); 
+                        renderFiles(selectedData.files);
+                    }
+                } 
+                else if (lowerCmd === 'clear' || lowerCmd === 'cls') {
+                    outputDiv.innerHTML = '';
+                    await showMenu();
+                }
+                else if (lowerCmd === 'reboot') {
+                    outputDiv.innerHTML = '';
+                    await typeWriter("Rebooting System...", "error", 50);
+                    await delay(1000);
+                    location.reload();
+                }
+                else if (lowerCmd === 'matrix') {
+                    toggleMatrix();
+                }
+                else {
+                    await typeWriter(`Command not found: ${cmd}. Type 'help' for options.`, "error", 5);
+                }
+            } catch (error) {
+                printLine("COMMAND ERROR: " + error.message, "error");
+                inputLine.style.display = "flex";
+            }
+        }
+
+        // --- MATRIX EFEKTİ ---
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+        let matrixInterval;
+
+        function toggleMatrix() {
+            if (canvas.style.display === 'block') {
+                canvas.style.display = 'none';
+                clearInterval(matrixInterval);
+                printLine("Matrix mode deactivated.");
+            } else {
+                canvas.style.display = 'block';
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                startMatrix();
+                printLine("Matrix mode activated.");
+            }
+        }
+
+        function startMatrix() {
+            const chars = "0101010101AGGX_CYBER_SECURITY";
+            const fontSize = 16;
+            const columns = canvas.width / fontSize;
+            const drops = Array(Math.floor(columns)).fill(1);
+            function draw() {
+                ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "#0F0";
+                ctx.font = fontSize + "px monospace";
+                for (let i = 0; i < drops.length; i++) {
+                    const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) { drops[i] = 0; }
+                    drops[i]++;
+                }
+            }
+            matrixInterval = setInterval(draw, 33);
+        }
+        window.addEventListener('resize', () => {
+             if(canvas.style.display === 'block') {
+                 canvas.width = window.innerWidth;
+                 canvas.height = window.innerHeight;
+             }
+        });
+    </script>
+</body>
+</html>
